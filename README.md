@@ -19,3 +19,7 @@ So for the initial version, I will just scrobble the last play  of each track.
 Maybe later we could scrobble more up to the total play number, but we would have to look at the play number already on last.fm too, so as to avoid double counting. 
 
 I went to the Songs view in the macOS Music app and added the column for "Last Played" and then sorted by it. Then I selected the entire list and copied it and pasted into an empty Numbers document. Then I exported as CSV. The result is `data/will-itunes-library-last-played.csv`
+
+### Install pylast package and get API account
+
+

@@ -1,0 +1,65 @@
+* Test the pylast package for accessing last.fm api
+
+Check we can access the API keys
+#+begin_src python :return data :results verbatim
+  from pathlib import Path
+  import toml
+
+  data = toml.loads((Path.cwd().parent / "lib" / "secrets.toml").read_text())
+#+end_src
+
+#+RESULTS:
+: {'API_USER': 'deprecated', 'API_KEY': '9aed56861b6255ab06cc191ddbd5ecad', 'API_SECRET': 'ac14bf9254c9e34fa1a835ccc464f928'}
+
+
+And the same for the test account I just made
+#+begin_src python :return data :results verbatim
+  from pathlib import Path
+  import yaml
+
+  data = yaml.safe_load(
+      (Path.cwd().parent / "lib" / "test-account-secrets.yaml").read_text()
+  )
+#+end_src
+
+#+RESULTS:
+: {'username': 'test-wjh', 'password_hash': 'a39c48b8acda422202e1127a77ac28ff', 'api_key': '7b2f01c49fd900060b40a4957d7e9016', 'api_secret': '34e77523f870af3adb1360dd3779e92c'}
+
+
+Test basic API access (based on example in ~pylast~ README)
+
+#+begin_src python
+  from pathlib import Path
+  import pylast
+  import yaml
+
+  # You have to have your own unique two values for API_KEY and API_SECRET
+  # Obtain yours from https://www.last.fm/api/account/create for Last.fm
+  API_KEY = "b25b959554ed76058ac220b7b2e0a026"  # this is a sample key
+  API_SECRET = "425b55975eed76058ac220b7b4e8a054"
+
+  # In order to perform a write operation you need to authenticate yourself
+  username = "your_user_name"
+  password_hash = pylast.md5("your_password")
+
+  secrets = yaml.safe_load(
+      (Path.cwd().parent / "lib" / "test-account-secrets.yaml").read_text()
+  )
+
+  network = pylast.LastFMNetwork(
+      api_key=secrets["api_key"],
+      api_secret=secrets["api_secret"],
+      username=secrets["username"],
+      password_hash=secrets["password_hash"],
+  )
+
+  # Now you can use that object everywhere
+  track = network.get_track("Nirvana", "Lithium")
+  track.love()
+  track.add_tags(("awesome", "favorite"))
+#+end_src
+
+#+RESULTS:
+: None
+
+Yes! That worked. Lithium now appears in my loved tracks list on the website.

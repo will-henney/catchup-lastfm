@@ -33,15 +33,6 @@ Test basic API access (based on example in ~pylast~ README)
   import pylast
   import yaml
 
-  # You have to have your own unique two values for API_KEY and API_SECRET
-  # Obtain yours from https://www.last.fm/api/account/create for Last.fm
-  API_KEY = "b25b959554ed76058ac220b7b2e0a026"  # this is a sample key
-  API_SECRET = "425b55975eed76058ac220b7b4e8a054"
-
-  # In order to perform a write operation you need to authenticate yourself
-  username = "your_user_name"
-  password_hash = pylast.md5("your_password")
-
   secrets = yaml.safe_load(
       (Path.cwd().parent / "lib" / "test-account-secrets.yaml").read_text()
   )
@@ -54,12 +45,120 @@ Test basic API access (based on example in ~pylast~ README)
   )
 
   # Now you can use that object everywhere
-  track = network.get_track("Nirvana", "Lithium")
+  track = network.get_track("Blur", "Parklife")
   track.love()
-  track.add_tags(("awesome", "favorite"))
+  track.add_tags(("britpop", "90s"))
 #+end_src
 
 #+RESULTS:
 : None
 
 Yes! That worked. Lithium now appears in my loved tracks list on the website.
+
+* Test scrobbling of tracks from my list
+
+Tricky part here is getting the timestamp in the right format
+#+begin_src python :results output 
+  from pathlib import Path
+  import pylast
+  import yaml
+  import datetime
+  import numpy as np
+  import pandas as pd
+
+  secrets = yaml.safe_load(
+      (Path.cwd().parent / "lib" / "test-account-secrets.yaml").read_text()
+  )
+
+  network = pylast.LastFMNetwork(
+      api_key=secrets["api_key"],
+      api_secret=secrets["api_secret"],
+      username=secrets["username"],
+      password_hash=secrets["password_hash"],
+  )
+
+
+  def date_to_timestamp(series):
+      """Convert a series of free-format datetimes to Unix timestamps"""
+      dt64 = (
+          pd.to_datetime(series)
+          .dt.tz_localize("America/Mexico_City", ambiguous=True)
+          .values
+      )
+      return dt64.astype(int) // 1_000_000_000
+
+  df = pd.read_csv("../data/will-itunes-library-last-played.csv")
+  # Remove spaces from column names
+  df.rename(columns=lambda x: x.replace(' ', '_'), inplace=True)
+  # Add a new column with the unix timestamps
+  df = df.assign(
+      timestamp=date_to_timestamp(df.Last_Played)
+  )
+  for entry in df.iloc[1000:1010].itertuples():
+      network.scrobble(
+          artist=entry.Artist,
+          title=entry.Title,
+          timestamp=entry.timestamp,
+      )
+
+#+end_src
+
+#+RESULTS:
+
+That has now added a bunch of scrobbled tracks
+
+* Test scrobbling multiple tracks at once
+#+begin_src python :results output 
+  from pathlib import Path
+  import logging
+  import pylast
+  import yaml
+  import datetime
+  import numpy as np
+  import pandas as pd
+
+  logging.basicConfig(level=logging.DEBUG, filename="scrobble.log")
+
+  secrets = yaml.safe_load(
+      (Path.cwd().parent / "lib" / "test-account-secrets.yaml").read_text()
+  )
+
+  network = pylast.LastFMNetwork(
+      api_key=secrets["api_key"],
+      api_secret=secrets["api_secret"],
+      username=secrets["username"],
+      password_hash=secrets["password_hash"],
+  )
+
+
+  def date_to_timestamp(series):
+      """Convert a series of free-format datetimes to Unix timestamps"""
+      dt64 = (
+          pd.to_datetime(series)
+          .dt.tz_localize("America/Mexico_City", ambiguous=True)
+          .values
+      )
+      return dt64.astype(int) // 1_000_000_000
+
+  df = pd.read_csv("../data/will-itunes-library-last-played.csv")
+  # Remove spaces from column names and convert to lower case
+  df.rename(columns=lambda x: x.replace(' ', '_').lower(), inplace=True)
+  # Add a new column with the unix timestamps
+  df = df.assign(
+      timestamp=date_to_timestamp(df.last_played)
+  )
+  tracks = (
+      df
+      .loc[400:500, ["artist", "title", "timestamp"]]
+      .to_dict(orient="records")
+  )
+  network.scrobble_many(tracks)
+
+
+#+end_src
+
+#+RESULTS:
+
+Hmm, that did a few but it won't do any more
+
+Maybe I have hit a rate limit

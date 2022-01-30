@@ -4,7 +4,7 @@ So now I have scrobbling working from my iPhone again (using Marvis Pro), I woul
 
 ## Overview of the cunning plan
 
-* [ ] Export data from iTunes library as CSV
+* [x] Export data from iTunes library as CSV
 * [ ] Read CSV file with pandas
 * [ ] Select the time period we want
 * [ ] Use the last.fm API to scrobble the tracks with the right date specified
@@ -22,4 +22,5 @@ I went to the Songs view in the macOS Music app and added the column for "Last P
 
 ### Install pylast package and get API account
 
+I have done this and also made a separate test account for trying things out: `test-wjh`
 

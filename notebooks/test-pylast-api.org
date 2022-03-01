@@ -149,7 +149,7 @@ That has now added a bunch of scrobbled tracks
   )
   tracks = (
       df
-      .loc[400:500, ["artist", "title", "timestamp"]]
+      .loc[300:400, ["artist", "title", "timestamp"]]
       .to_dict(orient="records")
   )
   network.scrobble_many(tracks)
